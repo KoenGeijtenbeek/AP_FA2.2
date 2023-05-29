@@ -1,7 +1,7 @@
 #include <string>
 #include "include/Employee.hpp"
 
-Employee::Employee(std::string name, bool busy, bool forkliftCertificate){
+Employee::Employee(std::string name, bool forkliftCertificate){
     this->name = name;
     this->busy = busy;
     this->forkliftCertificate = forkliftCertificate;

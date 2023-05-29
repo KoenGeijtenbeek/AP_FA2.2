@@ -8,8 +8,8 @@
 
 class Warehouse {
     public:
-        std::vector<Employee> Employees;
-        std::vector<Shelf> Shelves;
+        std::vector<Employee> employees;
+        std::vector<Shelf> shelves;
         Warehouse();
         void addEmployee(Employee employee);
         void addShelf(Shelf shelf);

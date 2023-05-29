@@ -235,3 +235,426 @@ TEST_CASE("Rearrange shelf with quallified, but busy, employee", "Warehouse::rea
     REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 30);
     REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 10);
 }
+
+
+//single shelf tests:
+
+
+TEST_CASE("Pick items from 1 full shelf of same item", "Warehouse::pickItems"){
+    Warehouse warehouse = Warehouse();
+    Shelf shelf1 = Shelf();
+    shelf1.pallets = {
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100)
+    };
+
+    warehouse.addShelf(shelf1);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 100);
+
+    bool successful = warehouse.pickItems("Cheese", 258);
+    REQUIRE(successful);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 42);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 100);
+}
+
+TEST_CASE("Picks items from 1 shelf with too few items", "Warehouse::pickItems"){
+    Warehouse warehouse = Warehouse();
+    Shelf shelf1 = Shelf();
+    shelf1.pallets = {
+        Pallet("Cheese", 100, 67),
+        Pallet("Cheese", 100, 50),
+        Pallet("Cheese", 100, 60),
+        Pallet("Cheese", 100, 80)
+    };
+
+    warehouse.addShelf(shelf1);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 67);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 50);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 60);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 80);
+
+    bool successful = warehouse.pickItems("Cheese", 258);
+    REQUIRE(!successful);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 67);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 50);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 60);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 80);
+}
+
+TEST_CASE("Picks items from 1 shelf with exactly enough items", "Warehouse::pickItems"){
+    Warehouse warehouse = Warehouse();
+    Shelf shelf1 = Shelf();
+    shelf1.pallets = {
+        Pallet("Cheese", 100, 100),
+        Pallet("Bananas", 100, 80),
+        Pallet("Cheese", 100, 80),
+        Pallet("Cheese", 100, 78)
+    };
+
+    warehouse.addShelf(shelf1);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 80);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 80);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 78);
+
+    bool successful = warehouse.pickItems("Cheese", 258);
+    REQUIRE(successful);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 80);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 0);
+}
+
+TEST_CASE("Pick items from 1 shelf of wrong items", "Warehouse::pickItems"){
+    Warehouse warehouse = Warehouse();
+    Shelf shelf1 = Shelf();
+    shelf1.pallets = {
+        Pallet("Bananas", 100, 99),
+        Pallet("Mayonnaise", 100, 10),
+        Pallet("Cheese", 100, 1),
+        Pallet("Bacon", 100, 30)
+    };
+
+    warehouse.addShelf(shelf1);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 99);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 10);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 1);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 30);
+
+    bool successful = warehouse.pickItems("Cheese", 258);
+    REQUIRE(!successful);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 99);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 10);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 1);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 30);
+}
+
+TEST_CASE("Pick items from empty shelf", "Warehouse::pickItems"){
+    Warehouse warehouse = Warehouse();
+    warehouse.addShelf(Shelf());
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 0);
+
+    bool successful = warehouse.pickItems("Cheese", 258);
+    REQUIRE(!successful);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 0);
+}
+
+//multiple shelves tests:
+
+TEST_CASE("Pick items from multiple full shelves of same item", "Warehouse::pickItems"){
+    Warehouse warehouse = Warehouse();
+    Shelf shelf1 = Shelf();
+    shelf1.pallets = {
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100)
+    };
+    Shelf shelf2 = Shelf();
+    shelf2.pallets = {
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100)
+    };
+    Shelf shelf3 = Shelf();
+    shelf3.pallets = {
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 100)
+    };
+
+
+    warehouse.addShelf(shelf1);
+    warehouse.addShelf(shelf2);
+    warehouse.addShelf(shelf3);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 100);
+
+    REQUIRE(warehouse.shelves[1].pallets[0].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[1].pallets[1].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[1].pallets[2].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[1].pallets[3].getItemCount() == 100);
+
+    REQUIRE(warehouse.shelves[2].pallets[0].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[2].pallets[1].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[2].pallets[2].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[2].pallets[3].getItemCount() == 100);
+
+    bool successful = warehouse.pickItems("Cheese", 1041);
+    REQUIRE(successful);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 0);
+
+    REQUIRE(warehouse.shelves[1].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[3].getItemCount() == 0);
+
+    REQUIRE(warehouse.shelves[2].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[2].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[2].pallets[2].getItemCount() == 59);
+    REQUIRE(warehouse.shelves[2].pallets[3].getItemCount() == 100);
+}
+
+TEST_CASE("Pick items from multiple shelves with too few items", "Warehouse::pickItems"){
+    Warehouse warehouse = Warehouse();
+    Shelf shelf1 = Shelf();
+    shelf1.pallets = {
+        Pallet("Cheese", 100, 80),
+        Pallet("Cheese", 100, 90),
+        Pallet("Cheese", 100, 10),
+        Pallet("Cheese", 100, 100)
+    };
+    Shelf shelf2 = Shelf();
+    shelf2.pallets = {
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 30),
+        Pallet("Cheese", 100, 60),
+        Pallet("Cheese", 100, 10)
+    };
+    Shelf shelf3 = Shelf();
+    shelf3.pallets = {
+        Pallet("Cheese", 100, 70),
+        Pallet("Cheese", 100, 50),
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 80)
+    };
+
+
+    warehouse.addShelf(shelf1);
+    warehouse.addShelf(shelf2);
+    warehouse.addShelf(shelf3);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 80);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 90);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 10);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 100);
+
+    REQUIRE(warehouse.shelves[1].pallets[0].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[1].pallets[1].getItemCount() == 30);
+    REQUIRE(warehouse.shelves[1].pallets[2].getItemCount() == 60);
+    REQUIRE(warehouse.shelves[1].pallets[3].getItemCount() == 10);
+
+    REQUIRE(warehouse.shelves[2].pallets[0].getItemCount() == 70);
+    REQUIRE(warehouse.shelves[2].pallets[1].getItemCount() == 50);
+    REQUIRE(warehouse.shelves[2].pallets[2].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[2].pallets[3].getItemCount() == 80);
+
+    bool successful = warehouse.pickItems("Cheese", 781);
+    REQUIRE(!successful);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 80);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 90);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 10);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 100);
+
+    REQUIRE(warehouse.shelves[1].pallets[0].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[1].pallets[1].getItemCount() == 30);
+    REQUIRE(warehouse.shelves[1].pallets[2].getItemCount() == 60);
+    REQUIRE(warehouse.shelves[1].pallets[3].getItemCount() == 10);
+
+    REQUIRE(warehouse.shelves[2].pallets[0].getItemCount() == 70);
+    REQUIRE(warehouse.shelves[2].pallets[1].getItemCount() == 50);
+    REQUIRE(warehouse.shelves[2].pallets[2].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[2].pallets[3].getItemCount() == 80);
+}
+
+TEST_CASE("Pick items from multiple shelves with exactly enough items", "Warehouse::pickItems"){
+    Warehouse warehouse = Warehouse();
+    Shelf shelf1 = Shelf();
+    shelf1.pallets = {
+        Pallet("Cheese", 100, 0),
+        Pallet("Cheese", 100, 90),
+        Pallet("Cheese", 100, 10),
+        Pallet("Cheese", 100, 100)
+    };
+    Shelf shelf2 = Shelf();
+    shelf2.pallets = {
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 30),
+        Pallet("Cheese", 100, 60),
+        Pallet("Cheese", 100, 10)
+    };
+    Shelf shelf3 = Shelf();
+    shelf3.pallets = {
+        Pallet("Cheese", 100, 70),
+        Pallet("Apples", 100, 50),
+        Pallet("Cheese", 100, 100),
+        Pallet("Cheese", 100, 80)
+    };
+
+
+    warehouse.addShelf(shelf1);
+    warehouse.addShelf(shelf2);
+    warehouse.addShelf(shelf3);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 90);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 10);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 100);
+
+    REQUIRE(warehouse.shelves[1].pallets[0].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[1].pallets[1].getItemCount() == 30);
+    REQUIRE(warehouse.shelves[1].pallets[2].getItemCount() == 60);
+    REQUIRE(warehouse.shelves[1].pallets[3].getItemCount() == 10);
+
+    REQUIRE(warehouse.shelves[2].pallets[0].getItemCount() == 70);
+    REQUIRE(warehouse.shelves[2].pallets[1].getItemCount() == 50);
+    REQUIRE(warehouse.shelves[2].pallets[2].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[2].pallets[3].getItemCount() == 80);
+
+    bool successful = warehouse.pickItems("Cheese", 650);
+    REQUIRE(successful);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 0);
+
+    REQUIRE(warehouse.shelves[1].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[3].getItemCount() == 0);
+
+    REQUIRE(warehouse.shelves[2].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[2].pallets[1].getItemCount() == 50);
+    REQUIRE(warehouse.shelves[2].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[2].pallets[3].getItemCount() == 0);
+}
+
+TEST_CASE("Pick items from multiple shelves with wrong items", "Warehouse::pickItems"){
+    Warehouse warehouse = Warehouse();
+    Shelf shelf1 = Shelf();
+    shelf1.pallets = {
+        Pallet("Bananas", 100, 80),
+        Pallet("Cheese", 100, 90),
+        Pallet("Bacon", 100, 10),
+        Pallet("Lettuce", 100, 100)
+    };
+    Shelf shelf2 = Shelf();
+    shelf2.pallets = {
+        Pallet("Mustard", 100, 100),
+        Pallet("Tomatoes", 100, 30),
+        Pallet("Yoghurt", 100, 60),
+        Pallet("Cheese", 100, 10)
+    };
+    Shelf shelf3 = Shelf();
+    shelf3.pallets = {
+        Pallet("Baguettes", 100, 70),
+        Pallet("Cheese", 100, 50),
+        Pallet("Pancake mix", 100, 100),
+        Pallet("Cheese", 100, 80)
+    };
+
+
+    warehouse.addShelf(shelf1);
+    warehouse.addShelf(shelf2);
+    warehouse.addShelf(shelf3);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 80);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 90);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 10);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 100);
+
+    REQUIRE(warehouse.shelves[1].pallets[0].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[1].pallets[1].getItemCount() == 30);
+    REQUIRE(warehouse.shelves[1].pallets[2].getItemCount() == 60);
+    REQUIRE(warehouse.shelves[1].pallets[3].getItemCount() == 10);
+
+    REQUIRE(warehouse.shelves[2].pallets[0].getItemCount() == 70);
+    REQUIRE(warehouse.shelves[2].pallets[1].getItemCount() == 50);
+    REQUIRE(warehouse.shelves[2].pallets[2].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[2].pallets[3].getItemCount() == 80);
+
+    bool successful = warehouse.pickItems("Cheese", 500);
+    REQUIRE(!successful);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 80);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 90);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 10);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 100);
+
+    REQUIRE(warehouse.shelves[1].pallets[0].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[1].pallets[1].getItemCount() == 30);
+    REQUIRE(warehouse.shelves[1].pallets[2].getItemCount() == 60);
+    REQUIRE(warehouse.shelves[1].pallets[3].getItemCount() == 10);
+
+    REQUIRE(warehouse.shelves[2].pallets[0].getItemCount() == 70);
+    REQUIRE(warehouse.shelves[2].pallets[1].getItemCount() == 50);
+    REQUIRE(warehouse.shelves[2].pallets[2].getItemCount() == 100);
+    REQUIRE(warehouse.shelves[2].pallets[3].getItemCount() == 80);
+}
+
+TEST_CASE("Pick items from multiple empty shelves", "Warehouse::pickItems"){
+    Warehouse warehouse = Warehouse();
+    
+
+
+    warehouse.addShelf(Shelf());
+    warehouse.addShelf(Shelf());
+    warehouse.addShelf(Shelf());
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 0);
+
+    REQUIRE(warehouse.shelves[1].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[3].getItemCount() == 0);
+
+    REQUIRE(warehouse.shelves[2].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[2].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[2].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[2].pallets[3].getItemCount() == 0);
+
+    bool successful = warehouse.pickItems("Cheese", 500);
+    REQUIRE(!successful);
+
+    REQUIRE(warehouse.shelves[0].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[0].pallets[3].getItemCount() == 0);
+
+    REQUIRE(warehouse.shelves[1].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[1].pallets[3].getItemCount() == 0);
+
+    REQUIRE(warehouse.shelves[2].pallets[0].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[2].pallets[1].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[2].pallets[2].getItemCount() == 0);
+    REQUIRE(warehouse.shelves[2].pallets[3].getItemCount() == 0);
+}

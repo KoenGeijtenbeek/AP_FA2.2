@@ -10,7 +10,7 @@ class IContainer {
         virtual bool isFull() = 0;
 };
 
-class Pallet : IContainer {
+class Pallet : public IContainer {
     private:
         int itemCount;
         std::string itemName;
@@ -26,6 +26,8 @@ class Pallet : IContainer {
         bool putOne();
         bool isEmpty();
         bool isFull();
+        bool operator>(const Pallet &rhs) const;
+        friend std::ostream& operator<<(std::ostream& os, Pallet rhs);
 };
 
 class Shelf : IContainer {
